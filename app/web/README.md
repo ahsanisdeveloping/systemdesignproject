@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+﻿# Next.js frontend
 
-## Getting Started
+Start Express from `app/api` with `npm run dev`. From this directory:
 
-First, run the development server:
-
-```bash
+```sh
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+In PowerShell, use `Copy-Item .env.example .env.local`. Use `npm.cmd` if
+PowerShell blocks `npm.ps1`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open http://localhost:3000 and click **Check API health**. No request runs on
+page load. The browser logs the result, validates its shape, disables caching,
+applies a ten-second timeout, and cancels requests on unmount. The button has
+loading, failure, and retry states.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Routing
 
-## Learn More
+The browser always requests the relative URL `/api/v1/health`.
 
-To learn more about Next.js, take a look at the following resources:
+- Without Nginx, `next dev` rewrites `/api/v1/*` to Express. `API_BASE_URL`
+  configures the development backend origin and defaults to
+  `http://localhost:5000`. Restart Next.js after changing it.
+- With Nginx, open http://localhost:8080. Nginx sends `/api/v1/*` directly to
+  Express and page requests to Next.js. API calls bypass Next.js.
+- `next build` / `next start` do not enable the development rewrite. Use Nginx
+  for API routing when running the production build.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+There is no Next.js health Route Handler. Express owns the response. Both
+setups use one browser origin, so this flow needs no CORS configuration.
+The local Nginx config has five-second connection/read timeouts; proxy errors
+can return HTML, which the browser handles by checking status before parsing.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This checks Express process liveness through the chosen routing path. It does
+not check database readiness or other dependencies. Use
+`http://localhost:5000/api/v1/health` to check Express independently.
 
-## Deploy on Vercel
+See the [root README](../../README.md) for running Nginx.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Checks
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```sh
+curl http://localhost:3000/api/v1/health
+npm run lint
+npm run build
+npm start
+```
+
+After `npm start`, check health through port 8080, not port 3000.

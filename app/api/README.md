@@ -30,6 +30,12 @@ Returns HTTP `200` with an uncached JSON response:
 This is a liveness check: it confirms the HTTP process can respond. It does
 not check database connectivity or other external dependencies.
 
+The frontend requests the same path through Nginx at
+`http://localhost:8080/api/v1/health`. Nginx forwards it directly here, bypassing
+Next.js. During development without Nginx, a Next.js rewrite provides routing
+on port 3000. Express owns the response in both cases; it is never cached.
+See the [root README](../../README.md) for Nginx setup.
+
 Unknown routes return JSON with HTTP `404`. Request errors use a consistent
 `error.message` format; internal error details are logged only on the server.
 The server stops accepting connections on `SIGINT` or `SIGTERM` and allows
