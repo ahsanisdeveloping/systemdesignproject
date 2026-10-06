@@ -11,6 +11,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/v1/health", healthRouter);
+app.use("/health", healthRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: { message: "Route not found" } });

@@ -1,4 +1,5 @@
 const app = require("./app");
+const pool = require("./db");
 
 const port = Number(process.env.PORT ?? 5000);
 
@@ -10,9 +11,10 @@ const server = app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
 
-server.on("error", (err) => {
+server.on("error", async (err) => {
   console.error("Failed to start server:", err.message);
   process.exitCode = 1;
+  await pool.end();
 });
 
 let shuttingDown = false;
@@ -25,11 +27,18 @@ function shutdown(signal) {
   const timeout = setTimeout(() => process.exit(1), 10000);
   timeout.unref();
 
-  server.close((err) => {
-    clearTimeout(timeout);
+  server.close(async (err) => {
     if (err) {
       console.error("Failed to close server:", err.message);
       process.exitCode = 1;
+    }
+    try {
+      await pool.end();
+    } catch (dbError) {
+      console.error("Failed to close database pool:", dbError.message);
+      process.exitCode = 1;
+    } finally {
+      clearTimeout(timeout);
     }
   });
 }

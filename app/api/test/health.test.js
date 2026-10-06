@@ -1,7 +1,8 @@
 const assert = require("node:assert/strict");
-const { before, after, test } = require("node:test");
+const { before, after, afterEach, test, mock } = require("node:test");
 const { once } = require("node:events");
 const app = require("../src/app");
+const pool = require("../src/db");
 
 let server;
 let baseUrl;
@@ -16,9 +17,13 @@ after(async () => {
   await new Promise((resolve, reject) => {
     server.close((err) => err ? reject(err) : resolve());
   });
+  await pool.end();
 });
 
-test("health endpoint returns an uncached JSON liveness response", async () => {
+afterEach(() => mock.restoreAll());
+
+test("health endpoint queries PostgreSQL and returns uncached JSON", async () => {
+  const query = mock.method(pool, "query", async () => ({ rows: [{ now: new Date() }] }));
   const response = await fetch(`${baseUrl}/api/v1/health`);
   const body = await response.json();
 
@@ -27,9 +32,28 @@ test("health endpoint returns an uncached JSON liveness response", async () => {
   assert.equal(response.headers.get("cache-control"), "no-store");
   assert.equal(response.headers.get("x-powered-by"), null);
   assert.equal(body.status, "ok");
+  assert.equal(body.database, "connected");
+  assert.equal(query.mock.callCount(), 1);
+  assert.deepEqual(query.mock.calls[0].arguments, ["SELECT NOW()"]);
   assert.equal(new Date(body.timestamp).toISOString(), body.timestamp);
   assert.equal(typeof body.uptime, "number");
   assert.ok(body.uptime >= 0);
+});
+
+test("/health also checks the database", async () => {
+  mock.method(pool, "query", async () => ({ rows: [{ now: new Date() }] }));
+  const response = await fetch(`${baseUrl}/health`);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).database, "connected");
+});
+
+test("database failure returns 503 without exposing connection details", async () => {
+  mock.method(pool, "query", async () => { throw new Error("private connection details"); });
+  mock.method(console, "error", () => {});
+  const response = await fetch(`${baseUrl}/health`);
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.deepEqual(await response.json(), { status: "error", database: "disconnected" });
 });
 
 test("unknown routes return a JSON 404", async () => {
