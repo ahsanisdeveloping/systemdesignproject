@@ -13,7 +13,15 @@ Copy `.env.example` to `.env` in this directory and set `PGPASSWORD` to your
 local PostgreSQL password. Adjust the other `PG*` values if your installation
 uses a different host, port, or user. `.env` is ignored by Git and loaded by
 Node.js before the pool is created. Environment variables already set in the
-terminal take precedence. No tables are needed for this lesson.
+terminal take precedence. The health check itself does not require any tables.
+
+The Lesson 4 schema is in
+[`apps/api/sql/001_initial_schema.sql`](../../apps/api/sql/001_initial_schema.sql).
+Run that file once against the empty `workflow_platform` database using
+pgAdmin's Query Tool or SQL Shell. It creates users, organizations, and
+organization memberships in one transaction. See the
+[schema experiments](../../docs/database-schema-experiments.md) for executed
+inserts, SELECT results, and PostgreSQL's constraint errors.
 
 ```sh
 npm install
@@ -22,6 +30,15 @@ npm run dev
 
 Use `npm start` to run without the development watcher. The server uses port
 `5000` by default; set the `PORT` environment variable to override it.
+
+## CRUD API
+
+Users, organizations, and memberships have versioned CRUD endpoints. See the
+[API contract and PowerShell examples](../../docs/api.md) and
+[OpenAPI specification](../../docs/openapi.json). These are unauthenticated local
+development management endpoints. Authentication and role enforcement remain
+required before public deployment. Run `npm run test:integration` to test CRUD
+against PostgreSQL in an isolated temporary schema.
 
 ## Health check
 

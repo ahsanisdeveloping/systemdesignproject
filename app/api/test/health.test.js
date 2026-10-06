@@ -60,9 +60,9 @@ test("unknown routes return a JSON 404", async () => {
   const response = await fetch(`${baseUrl}/missing`);
 
   assert.equal(response.status, 404);
-  assert.deepEqual(await response.json(), {
-    error: { message: "Route not found" },
-  });
+  const body = await response.json();
+  assert.deepEqual(body.error, { code: "NOT_FOUND", message: "Route not found" });
+  assert.equal(body.requestId, response.headers.get("x-request-id"));
 });
 
 test("malformed JSON returns a JSON 400 without internal error details", async () => {
@@ -73,7 +73,7 @@ test("malformed JSON returns a JSON 400 without internal error details", async (
   });
 
   assert.equal(response.status, 400);
-  assert.deepEqual(await response.json(), {
-    error: { message: "Invalid request" },
-  });
+  const body = await response.json();
+  assert.deepEqual(body.error, { code: "INVALID_JSON", message: "Invalid request" });
+  assert.equal(body.requestId, response.headers.get("x-request-id"));
 });

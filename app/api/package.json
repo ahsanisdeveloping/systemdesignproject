@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "test": "node --test"
+    "test": "node --test test/health.test.js test/crud.test.js",
+    "test:integration": "node --test test/crud.integration.test.js"
   },
   "keywords": [],
   "author": "",
