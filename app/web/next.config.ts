@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Keep browser-test compilation separate from an active development server.
+  distDir: process.env.E2E_TEST === "1" ? ".next-e2e" : ".next",
+  // Local browser tests use the loopback address rather than localhost.
+  allowedDevOrigins: ["127.0.0.1"],
   async rewrites() {
     // Local convenience only. Nginx owns API routing outside development.
     if (process.env.NODE_ENV !== "development") return [];
